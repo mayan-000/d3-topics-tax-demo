@@ -24,6 +24,7 @@ const packConfig = {
   link: (d, n) => `#${d.name.replace(/\s/g, "-")}`,
   width: 1152,
   height: 1152,
+	linkTarget: "_self",
 };
 
 const treeConfig = {
@@ -34,15 +35,26 @@ const treeConfig = {
       .reverse()
       .map((d) => d.data.name)
       .join(".")}`,
-  link: (d, n) => "",
+  link: (d, n) => console.log(d, n),
   width: 2000,
 };
 
-const hash = window.location.hash
-  ? window.location.hash.slice(1).split("-").join(" ")
-  : "";
+const render = async () => {
+  const hash = window.location.hash
+    ? window.location.hash.slice(1).split("-").join(" ")
+    : "";
 
-let chart = hash
-  ? await Tree(taxonomy, hash, treeConfig)
-  : await Pack(taxonomy, packConfig);
-document.getElementById("root").appendChild(chart);
+  let chart = hash
+    ? await Tree(taxonomy, hash, treeConfig)
+    : await Pack(taxonomy, packConfig);
+  const node = document.getElementById("root");
+  node.appendChild(chart);
+};
+
+render();
+
+window.onhashchange = () => {
+	const node = document.getElementById("root");
+	node.innerHTML = "";
+	render();
+}

@@ -74,8 +74,8 @@ export default async function Pack(
   let distance = 0;
   const distanceStore = [];
   let currentIdx = 0;
-  let x = 576;
-  let y = 500;
+  let x = width / 2;
+  let y = height / 2;
 
   while (currentIdx < descendants.length) {
     if (distance === 0) {
@@ -132,7 +132,8 @@ export default async function Pack(
     .attr("stroke", (d) => (d.children ? stroke : null))
     .attr("stroke-width", (d) => (d.children ? strokeWidth : null))
     .attr("stroke-opacity", (d) => (d.children ? strokeOpacity : null))
-    .attr("r", (d) => 80);
+    .attr("r", (d) => 80)
+    .attr("class", "circle");
 
   if (T) node.append("title").text((d, i) => T[i]);
 

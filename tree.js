@@ -39,8 +39,8 @@ export default async function Tree(
     height,
     r = 3,
     padding = 1,
-    fill = "#999",
-    stroke = "#555",
+    fill = "#C5D1EB",
+    stroke = "#92DCE5",
     strokeWidth = 1.5,
     strokeOpacity = 0.4,
     strokeLinejoin,
@@ -113,7 +113,9 @@ export default async function Tree(
   node
     .append("circle")
     .attr("fill", (d) => (d.children ? stroke : fill))
-    .attr("r", r);
+    .attr("r", 20)
+		.attr('stroke', '#197BBD')
+		.attr('stroke-width', 3);
 
   if (title != null) node.append("title").text((d) => title(d.data, d));
 
@@ -121,7 +123,7 @@ export default async function Tree(
     node
       .append("text")
       .attr("dy", "0.32em")
-      .attr("x", (d) => (d.children ? -6 : 6))
+      .attr("x", (d) => (d.children ? -25 : 25))
       .attr("text-anchor", (d) => (d.children ? "end" : "start"))
       .attr("paint-order", "stroke")
       .attr("stroke", halo)
