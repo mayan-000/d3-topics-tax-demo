@@ -74,39 +74,20 @@ export default async function Pack(
   let distance = 0;
   const distanceStore = [];
   let currentIdx = 0;
-  let x = width / 2;
-  let y = height / 2;
+  const centerX = width / 2;
+  const centerY = 150;
+  const levelHeight = 200;
+  const nodeSpacing = 200;
 
   while (currentIdx < descendants.length) {
-    if (distance === 0) {
-      distanceStore.push({ x, y });
-      currentIdx++;
-      distance++;
-      continue;
-    }
+    const nodesInLevel = distance + 1;
 
-    for (let xi = 0; xi <= distance; xi++) {
-      const yj = distance - xi;
-      let newX = x;
-      let newY = y;
+    for (let i = 0; i < nodesInLevel && currentIdx < descendants.length; i++) {
+      const newX = centerX + (i - distance / 2) * nodeSpacing;
 
-      newX = x + 180 * xi;
-      newY = y + 180 * yj;
-      distanceStore.push({ x: newX, y: newY });
-      currentIdx++;
+      const newY =
+        centerY + (distance - Math.abs(i - distance / 2)) * levelHeight;
 
-      newX = x - 180 * xi;
-      newY = y - 180 * yj;
-      distanceStore.push({ x: newX, y: newY });
-      currentIdx++;
-
-      newX = x - 180 * xi;
-      newY = y + 180 * yj;
-      distanceStore.push({ x: newX, y: newY });
-      currentIdx++;
-
-      newX = x + 180 * xi;
-      newY = y - 180 * yj;
       distanceStore.push({ x: newX, y: newY });
       currentIdx++;
     }

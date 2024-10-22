@@ -22,8 +22,8 @@ const packConfig = {
       .map(({ data: d }) => d.name)
       .join(".")}\n${n.value.toLocaleString("en")}`,
   link: (d, n) => `#${d.name.replace(/\s/g, "-")}`,
-  width: 1152,
-  height: 1152,
+  width: 1500,
+  height: 1250,
 	linkTarget: "_self",
 };
 
