@@ -40,9 +40,9 @@ export default async function Tree(
 
   const root = d3.hierarchy(data);
   const dx = 60;
-  const dy = (width - marginRight - marginLeft) / (1 + root.height);
+  let dy = (width - marginRight - marginLeft) / (1 + root.height);
 
-  const tree = d3.tree().nodeSize([dx, dy]);
+  d3.tree().nodeSize([dx, dy]);
   const diagonal = d3
     .linkHorizontal()
     .x((d) => d.y)
@@ -73,8 +73,14 @@ export default async function Tree(
     const duration = event?.altKey ? 2500 : 250;
     const nodes = root.descendants().reverse();
     const links = root.links();
+    const maxDepth = nodes.reduce((acc, node) => {
+      acc = Math.max(acc, node.depth);
 
-    tree(root);
+			return acc;
+    }, 0);
+
+    dy = (width - marginRight - marginLeft) / (maxDepth + 1);
+    d3.tree().nodeSize([dx, dy])(root);
 
     let left = root;
     let right = root;
@@ -183,7 +189,8 @@ export default async function Tree(
   root.descendants().forEach((d, i) => {
     d.id = i;
     d._children = d.children;
-		d.children = null;
+
+    if (d.data.name !== "Root") d.children = null;
   });
 
   update(null, root);
