@@ -28,107 +28,165 @@ const parseTaxonomy = async (text) => {
 
 export default async function Tree(
   data,
-	subTaxonomyName,
-  {
-    tree = d3.tree,
-    label,
-    title,
-    link,
-    linkTarget = "_blank",
-    width = 640,
-    height,
-    r = 3,
-    padding = 1,
-    fill = "#C5D1EB",
-    stroke = "#92DCE5",
-    strokeWidth = 1.5,
-    strokeOpacity = 0.4,
-    strokeLinejoin,
-    strokeLinecap,
-    halo = "#fff",
-    haloWidth = 3,
-    curve = d3.curveBumpX,
-  } = {}
+  { width = 640, fill = "#C5D1EB", stroke = "#92DCE5" } = {}
 ) {
-	data = await parseTaxonomy(data);
-	data = data.children.find((d) => d.name === subTaxonomyName)
+  data = await parseTaxonomy(data);
+  // data = data.children.find((d) => d.name === subTaxonomyName);
+
+  const marginTop = 40;
+  const marginRight = 10;
+  const marginBottom = 40;
+  const marginLeft = 100;
 
   const root = d3.hierarchy(data);
-
-  const descendants = root.descendants();
-  const L = label == null ? null : descendants.map((d) => label(d.data, d));
-
   const dx = 60;
-  const dy = width / (root.height + padding);
-  tree().nodeSize([dx, dy])(root);
+  const dy = (width - marginRight - marginLeft) / (1 + root.height);
 
-  let x0 = Infinity;
-  let x1 = -x0;
-  root.each((d) => {
-    if (d.x > x1) x1 = d.x;
-    if (d.x < x0) x0 = d.x;
-  });
-
-  if (height === undefined) height = x1 - x0 + dx * 2;
-
-  if (typeof curve !== "function") throw new Error(`Unsupported curve`);
+  const tree = d3.tree().nodeSize([dx, dy]);
+  const diagonal = d3
+    .linkHorizontal()
+    .x((d) => d.y)
+    .y((d) => d.x);
 
   const svg = d3
     .create("svg")
-    .attr("viewBox", [(-dy * padding) / 2, x0 - dx, width, height])
     .attr("width", width)
-    .attr("height", height)
-    .attr("style", "max-width: 100%; height: auto; height: intrinsic;")
-    .attr("font-family", "sans-serif")
-    .attr("font-size", 10);
+    .attr("height", dx)
+    .attr("viewBox", [-marginLeft, -marginTop, width, dx])
+    .attr(
+      "style",
+      "max-width: 100%; height: auto; font: 20px sans-serif; user-select: none;"
+    );
 
-  svg
+  const gLink = svg
     .append("g")
     .attr("fill", "none")
     .attr("stroke", stroke)
-    .attr("stroke-opacity", strokeOpacity)
-    .attr("stroke-linecap", strokeLinecap)
-    .attr("stroke-linejoin", strokeLinejoin)
-    .attr("stroke-width", strokeWidth)
-    .selectAll("path")
-    .data(root.links())
-    .join("path")
-    .attr(
-      "d",
-      d3
-        .link(curve)
-        .x((d) => d.y)
-        .y((d) => d.x)
-    );
+    .attr("stroke-width", 1.5);
 
-  const node = svg
+  const gNode = svg
     .append("g")
-    .selectAll("a")
-    .data(root.descendants())
-    .join("a")
-    .attr("xlink:href", link == null ? null : (d) => link(d.data, d))
-    .attr("target", link == null ? null : linkTarget)
-    .attr("transform", (d) => `translate(${d.y},${d.x})`);
+    .attr("cursor", "pointer")
+    .attr("pointer-events", "all");
 
-  node
-    .append("circle")
-    .attr("fill", (d) => (d.children ? stroke : fill))
-    .attr("r", 20)
-		.attr('stroke', '#197BBD')
-		.attr('stroke-width', 3);
+  function update(event, source) {
+    const duration = event?.altKey ? 2500 : 250;
+    const nodes = root.descendants().reverse();
+    const links = root.links();
 
-  if (title != null) node.append("title").text((d) => title(d.data, d));
+    tree(root);
 
-  if (L)
-    node
+    let left = root;
+    let right = root;
+    root.eachBefore((node) => {
+      if (node.x < left.x) left = node;
+      if (node.x > right.x) right = node;
+    });
+
+    const height = right.x - left.x + marginTop + marginBottom;
+
+    const transition = svg
+      .transition()
+      .duration(duration)
+      .attr("height", height)
+      .attr("viewBox", [-marginLeft, left.x - marginTop, width, height])
+      .tween(
+        "resize",
+        window.ResizeObserver ? null : () => () => svg.dispatch("toggle")
+      );
+
+    const node = gNode.selectAll("g").data(nodes, (d) => d.id);
+
+    const nodeEnter = node
+      .enter()
+      .append("g")
+      .attr("transform", (d) => `translate(${source.y0},${source.x0})`)
+      .attr("fill-opacity", 0)
+      .attr("stroke-opacity", 0)
+      .on("click", (event, d) => {
+        d.children = d.children ? null : d._children;
+        update(event, d);
+      });
+
+    nodeEnter
+      .append("circle")
+      .attr("r", 15)
+      .attr("fill", (d) => {
+        if (!d.children && !d._children) {
+          return fill;
+        } else {
+          return "#92DCE5";
+        }
+      })
+      .attr("stroke-width", 3)
+      .attr("stroke", "#197BBD");
+
+    nodeEnter
+      .append("title")
+      .text((d) => (d.data.name ? `Value: ${d.data.name}` : "No value"));
+
+    nodeEnter
       .append("text")
-      .attr("dy", "0.32em")
-      .attr("x", (d) => (d.children ? -25 : 25))
-      .attr("text-anchor", (d) => (d.children ? "end" : "start"))
-      .attr("paint-order", "stroke")
-      .attr("stroke", halo)
-      .attr("stroke-width", haloWidth)
-      .text((d, i) => L[i]);
+      .attr("dy", "0.31em")
+      .attr("x", (d) => (d._children ? -20 : 20))
+      .attr("text-anchor", (d) => (d._children ? "end" : "start"))
+      .text((d) => d.data.name)
+      .attr("stroke-linejoin", "round")
+      .attr("stroke-width", 3)
+      .attr("stroke", "white")
+      .attr("paint-order", "stroke");
+
+    node
+      .merge(nodeEnter)
+      .transition(transition)
+      .attr("transform", (d) => `translate(${d.y},${d.x})`)
+      .attr("fill-opacity", 1)
+      .attr("stroke-opacity", 1);
+
+    node
+      .exit()
+      .transition(transition)
+      .remove()
+      .attr("transform", (d) => `translate(${source.y},${source.x})`)
+      .attr("fill-opacity", 0)
+      .attr("stroke-opacity", 0);
+
+    const link = gLink.selectAll("path").data(links, (d) => d.target.id);
+
+    const linkEnter = link
+      .enter()
+      .append("path")
+      .attr("d", (d) => {
+        const o = { x: source.x0, y: source.y0 };
+        return diagonal({ source: o, target: o });
+      });
+
+    link.merge(linkEnter).transition(transition).attr("d", diagonal);
+
+    link
+      .exit()
+      .transition(transition)
+      .remove()
+      .attr("d", (d) => {
+        const o = { x: source.x, y: source.y };
+        return diagonal({ source: o, target: o });
+      });
+
+    root.eachBefore((d) => {
+      d.x0 = d.x;
+      d.y0 = d.y;
+    });
+  }
+
+  root.x0 = dy / 2;
+  root.y0 = 0;
+  root.descendants().forEach((d, i) => {
+    d.id = i;
+    d._children = d.children;
+		d.children = null;
+  });
+
+  update(null, root);
 
   return svg.node();
 }
